@@ -18,18 +18,39 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
+            overflow: hidden;
+        }
+
+        h1, h2 {
+            margin: 10px;
         }
 
         .game-container {
             display: flex;
             flex-direction: column;
+            align-items: center;
             gap: 20px;
+        }
+
+        .choices {
+            display: flex;
+            gap: 20px;
+            margin: 20px;
+        }
+
+        .choices img {
+            width: 100px;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .choices img:hover {
+            transform: scale(1.2);
         }
 
         .buttons {
             display: flex;
-            justify-content: space-between;
-            gap: 50px;
+            gap: 20px;
         }
 
         button {
@@ -40,35 +61,151 @@
             background: linear-gradient(90deg, #ff0000, #00ff00, #0000ff);
             background-size: 300%;
             animation: gradient 3s infinite linear;
-            cursor: pointer;
             color: white;
+            cursor: pointer;
         }
 
         button:hover {
             opacity: 0.8;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .end-game {
+            position: absolute;
+            top: 10px;
+            left: 10px;
         }
     </style>
 </head>
 <body>
     <div class="game-container">
         <h1>Rock Paper Scissors</h1>
+        <h2 id="status">Enter your name to start the game</h2>
         <input id="playerName" type="text" placeholder="Enter your name" />
         <div class="buttons">
             <button onclick="startGame('5-rounds')">5 Rounds</button>
             <button onclick="startGame('infinite')">Infinite</button>
         </div>
+        <div id="gameUI" style="display:none;">
+            <h2 id="roundStatus"></h2>
+            <div class="choices">
+                <img src="rock-icon.png" alt="Rock" onclick="makeChoice('rock')" />
+                <img src="paper-icon.png" alt="Paper" onclick="makeChoice('paper')" />
+                <img src="scissors-icon.png" alt="Scissors" onclick="makeChoice('scissors')" />
+            </div>
+            <div class="buttons">
+                <button id="endGame" class="end-game" style="display:none;" onclick="endInfiniteGame()">End</button>
+            </div>
+        </div>
     </div>
-
+    <audio id="bgMusic" loop>
+        <source src="background-music.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="buttonClick">
+        <source src="button-click.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="roundEnd">
+        <source src="round-end.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="gameEnd">
+        <source src="game-end.mp3" type="audio/mpeg">
+    </audio>
     <script>
+        let gameMode = "";
+        let playerName = "";
+        let playerScore = 0;
+        let yamiiScore = 0;
+        let currentRound = 0;
+        const maxRounds = 5;
+
+        const bgMusic = document.getElementById("bgMusic");
+        const buttonClick = document.getElementById("buttonClick");
+        const roundEnd = document.getElementById("roundEnd");
+        const gameEnd = document.getElementById("gameEnd");
+
         function startGame(mode) {
-            const name = document.getElementById("playerName").value.trim();
-            if (!name) {
+            buttonClick.play();
+            playerName = document.getElementById("playerName").value.trim();
+            if (!playerName) {
                 alert("Please enter your name!");
                 return;
             }
-            alert(`Starting ${mode} mode for ${name}`);
-            // Add game logic here
+            gameMode = mode;
+            document.getElementById("status").textContent = `Hello ${playerName}, let's play!`;
+            document.getElementById("gameUI").style.display = "block";
+            if (mode === "infinite") {
+                document.getElementById("endGame").style.display = "inline-block";
+            }
+            bgMusic.play();
+        }
+
+        function makeChoice(playerChoice) {
+            buttonClick.play();
+            const choices = ["rock", "paper", "scissors"];
+            const yamiiChoice = choices[Math.floor(Math.random() * choices.length)];
+            currentRound++;
+            let result = "";
+
+            if (playerChoice === yamiiChoice) {
+                result = `It's a tie! You both chose ${playerChoice}.`;
+            } else if (
+                (playerChoice === "rock" && yamiiChoice === "scissors") ||
+                (playerChoice === "paper" && yamiiChoice === "rock") ||
+                (playerChoice === "scissors" && yamiiChoice === "paper")
+            ) {
+                playerScore++;
+                result = `${playerName}, you win round ${currentRound}!`;
+                document.getElementById("roundStatus").style.color = "green";
+            } else {
+                yamiiScore++;
+                result = `${playerName}, you lose round ${currentRound}.`;
+                document.getElementById("roundStatus").style.color = "red";
+            }
+
+            document.getElementById("roundStatus").textContent = result;
+            roundEnd.play();
+
+            if (gameMode === "5-rounds" && currentRound === maxRounds) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            bgMusic.pause();
+            gameEnd.play();
+            const finalMessage = playerScore > yamiiScore
+                ? `${playerName}, you won the game!`
+                : `${playerName}, you lost the game.`;
+            document.getElementById("status").textContent = finalMessage;
+            document.getElementById("gameUI").innerHTML = `
+                <button onclick="restartGame()">Restart</button>
+                <button onclick="goHome()">Home</button>
+            `;
+        }
+
+        function endInfiniteGame() {
+            bgMusic.pause();
+            gameEnd.play();
+            const finalMessage = playerScore > yamiiScore
+                ? `${playerName}, you won more rounds!`
+                : `${playerName}, Yamii won more rounds.`;
+            alert(finalMessage);
+            goHome();
+        }
+
+        function restartGame() {
+            location.reload();
+        }
+
+        function goHome() {
+            window.location.href = "index.html";
         }
     </script>
 </body>
 </html>
+
